@@ -7,49 +7,43 @@ import requests
 import pandas as pd
 #from selenium.webdriver.chrome.service import Service as ChromeService
 #from webdriver_manager.chrome import ChromeDriverManager
-
-#@pytest.mark.skip(reason="Do not run in CI")
-def test_driver_manager_chrome():
-    #service = ChromeService(executable_path=ChromeDriverManager().install())
-    #driver = webdriver.Chrome(service=service)
-    
-    output_file = open("output.csv","w")
-    
-    news_url = 'https://www.liberation.fr/idees-et-debats/frederic-gros-dire-que-la-guerre-est-dans-la-nature-humaine-est-un-raisonnement-paresseux-20230217_MAY6BFGAANHW5E3MESNNG5VX5Y/'
-    response = requests.get(news_url)
-    html_doc = response.text
-    soup = bs4.BeautifulSoup(html_doc, "html.parser")
-
-    paragraphs = soup.find_all('p') # class_='CustomContentListItem__Link-sc-2hcki7-2 kPzBgo'
-    
-    for paragraph in paragraphs:
-        output_file.write(paragraph.get_text())
-
-    output_file.close()
-
-    # i = 0
-    # for i in range(len(pages)): 
-    #      driver.get(url)
-    # webpages = driver.find_elements_by_class_name('CustomContentListItem__Article-sc-2hcki7-0 euEONJ')
-    # number_of_pages = int(webpages[-2].text)
-    # for _ in range(number_of_pages):
-    #     next_page = driver.find_element(By.XPATH,"//a[text()='›']").click()
-    #     time.sleep(2)
-    # driver.quit()
+MASTER_URL = 'https://www.liberation.fr/'
+def test_main():
+     output_file = open("output.csv","w")
+     urls = ['politique/', 'international/', 'checknews/', 'culture/', 'idees-et-debats/', 'societe/', 'enquetes/', 'environnement/', 'economie/']
+     for url in urls:
+         crawl_link_page(MASTER_URL + url, output_file)
+         i = 1
+         for i in range(21):
+            new_link = MASTER_URL + url + '/' + str(i) + '/' 
+            try:
+                crawl_link_page(new_link, output_file)
+            except Exception as ex: 
+                if ex.code == 404:
+                    break
+            print(i)
      
+     output_file.close()
 
-# def get_links_from_html(html: str):
+def crawl_link_page(url, output_file):
+    # single page chosen from news website
+    response = requests.get(url)
+    html_doc = response.text
 
-#     soup = bs4.BeautifulSoup(html, "html.parser")
-#     links = []
-#     for table_element in soup.find_all("a"):
-#         table = []
-#        for tr in table_element.find_all("tr"):
-#             row = ["".join(cell.stripped_strings) for cell in tr.find_all(["td", "th"])]
-#             table.append(row)
-#         tables.append(table)
+    soup = bs4.BeautifulSoup(html_doc, "html.parser")
+    # all text of the article is in p tags
+    for article in soup.find_all('article'):
+        link = article.a.get('href')
+        crawl_article(link, output_file)
+     
+def crawl_article(link, output_file):
+    response = requests.get(MASTER_URL + link)
+    html = response.text
+    page_soup = bs4.BeautifulSoup(html, 'html.parser')
+    paragraphs = page_soup.find_all('p') # class_='CustomContentListItem__Link-sc-2hcki7-2 kPzBgo'
+    #for paragraph in paragraphs:
+      #  output_file.write(paragraph.get_text())
 
-#     return tables
 
 
-test_driver_manager_chrome()
+test_main()
